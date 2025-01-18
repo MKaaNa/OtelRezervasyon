@@ -41,6 +41,7 @@ public class User implements UserDetails {
         return email;  // Email'i döndürüyoruz
     }
 
+    // getPassword() metodunu implement ettik çünkü Spring Security UserDetails arayüzü gerektiriyor
     @Override
     public String getPassword() {
         return password;  // Şifreyi döndürüyoruz
