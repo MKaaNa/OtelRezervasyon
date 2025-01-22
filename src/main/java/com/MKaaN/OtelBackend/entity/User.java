@@ -31,6 +31,19 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
+    // Default constructor, userRole CUSTOMER olarak atanır
+    public User() {
+        this.userRole = UserRole.CUSTOMER;  // Yeni kullanıcılar için role otomatik olarak CUSTOMER atanır
+    }
+
+    // Constructor with parameters for creating a user
+    public User(String email, String password, String name) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.userRole = UserRole.CUSTOMER;  // Kayıt olan kullanıcıya otomatik olarak CUSTOMER rolü verilir
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(userRole.name()));
@@ -41,7 +54,6 @@ public class User implements UserDetails {
         return email;  // Email'i döndürüyoruz
     }
 
-    // getPassword() metodunu implement ettik çünkü Spring Security UserDetails arayüzü gerektiriyor
     @Override
     public String getPassword() {
         return password;  // Şifreyi döndürüyoruz
@@ -64,6 +76,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return true;  // Kullanıcı her zaman aktif kabul edilir
     }
 }

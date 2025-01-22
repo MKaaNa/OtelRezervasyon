@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         // Tüm endpointlere CORS izin verir
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:53597")  // Frontend adresi (Angular)
+                .allowedOrigins("http://localhost:4200")  // Frontend adresi (Angular)
                 .allowedMethods("GET", "POST", "PUT", "DELETE")  // İzin verilen HTTP metodları
                 .allowedHeaders("*")  // İzin verilen başlıklar
                 .allowCredentials(true);  // Kimlik doğrulaması gerektiren istekleri kabul et

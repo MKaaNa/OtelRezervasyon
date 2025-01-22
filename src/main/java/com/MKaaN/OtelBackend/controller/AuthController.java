@@ -1,6 +1,6 @@
 package com.MKaaN.OtelBackend.controller;
 
-import com.MKaaN.OtelBackend.utils.JwtResponse;  // Import doğru yapıldığından emin olun
+import com.MKaaN.OtelBackend.utils.JwtResponse;
 import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.services.auth.AuthService;
 import lombok.RequiredArgsConstructor;

@@ -13,9 +13,4 @@ import java.util.HashMap;
 @RestController
 public class UserController {
 
-
-        // userService.save(user);  // Örnek bir servis çağrısı (bu kısımdaki implementasyonu kullanıyorsanız eklemeniz gerekebilir)
-
-        // Başarı mesajını JSON olarak döndürüyoruz
-
     }
