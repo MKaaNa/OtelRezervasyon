@@ -1,6 +1,7 @@
 package com.MKaaN.OtelBackend.services.auth;
 
 import com.MKaaN.OtelBackend.entity.User;
+import com.MKaaN.OtelBackend.enums.UserRole;
 import com.MKaaN.OtelBackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +33,29 @@ public class AuthService {
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword); // Şifreyi kontrol et
     }
+
+    // Admin hesabı oluşturma
+    public void createDefaultAdmin() {
+        // Veritabanında admin hesabı olup olmadığını kontrol ediyoruz
+        if (!userRepository.findByEmail("admin@testdeneme.com").isPresent()) {
+            // Şifreyi hash'liyoruz
+            String encodedPassword = passwordEncoder.encode("admin1234");
+
+            // Yeni admin kullanıcı oluşturuyoruz
+            User admin = new User();
+            admin.setEmail("admin@testdeneme.com");
+            admin.setName("ADmin");
+            admin.setPassword(encodedPassword);
+            admin.setUserRole(UserRole.ADMIN);
+
+            // Admin hesabını kaydediyoruz
+            userRepository.save(admin);
+            System.out.println("Default admin created successfully.");
+        } else {
+            System.out.println("Admin already exists.");
+        }
+    }
+
 
   public String loginUser(String email, String password) {
     User user = getUserByEmail(email);

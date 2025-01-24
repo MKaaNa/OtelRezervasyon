@@ -1,7 +1,7 @@
 package com.MKaaN.OtelBackend.services.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder; // Daha soyut bir yapı kullanıldı
 import org.springframework.stereotype.Service;
 import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.repository.UserRepository;
@@ -15,21 +15,23 @@ public class AuthServiceImpl extends AuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder; // BCrypt yerine PasswordEncoder kullanımı önerilir
 
-    // getUserByEmail metodunu güncelliyoruz
+    // Kullanıcıyı email ile alıyoruz
     public User getUserByEmail(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);  // findByEmail Optional döner
-        return optionalUser.orElse(null);  // Eğer kullanıcı varsa döner, yoksa null döner
+        return userRepository.findByEmail(email).orElse(null);
     }
 
+    // Şifre doğrulama işlemi
     public boolean checkPassword(String rawPassword, String encodedPassword) {
-        return passwordEncoder.matches(rawPassword, encodedPassword);  // Şifreyi karşılaştırıyoruz
+        return passwordEncoder.matches(rawPassword, encodedPassword); // BCrypt ile şifre karşılaştırma
     }
 
+    // Kullanıcı kaydetme işlemi
     public void registerUser(User user) {
-        String encodedPassword = passwordEncoder.encode(user.getPassword());  // Şifreyi encode et
-        user.setPassword(encodedPassword);  // Şifreyi encode edilen versiyonla değiştir
-        userRepository.save(user);  // Kullanıcıyı kaydet
+        // Şifreyi hashliyoruz
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword); // Hashlenmiş şifreyi kullanıcıya set ediyoruz
+        userRepository.save(user); // Kullanıcıyı kaydediyoruz
     }
 }
