@@ -84,6 +84,11 @@ public class User implements UserDetails {
         return new User(email, password, name);
     }
 
+    // Kullanıcıyı bir DTO'ya dönüştürme (örneğin, frontend için)
+    public UserDTO toDTO() {
+        return new UserDTO(this.id, this.email, this.name, this.userRole);
+    }
+
     public Long getId() {
         return id;
     }

@@ -64,24 +64,21 @@ public class UserController {
     }
 
 
-    // Kullanıcıyı güncellemek için API endpointi (PUT methodu)
-    @PutMapping("/users/{id}")
-    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody User userRequest) {
-        Optional<User> userOptional = userRepository.findById(id);
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            user.setEmail(userRequest.getEmail());
-            user.setName(userRequest.getName());
-            // Yeni şifre hash'liyoruz
-            user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-            user.setUserRole(userRequest.getUserRole());
 
-            userRepository.save(user);
-
-            UserDTO userDTO = new UserDTO(user.getId(), user.getEmail(), user.getName(), user.getUserRole());
-            return ResponseEntity.ok(userDTO);
+    // Kullanıcıyı güncelleme endpoint'i
+    @PutMapping("/users/{userId}")
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long userId, @RequestBody User updatedUser) {
+        Optional<User> existingUser = userRepository.findById(userId);
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            user.setEmail(updatedUser.getEmail());
+            user.setName(updatedUser.getName());
+            user.setUserRole(updatedUser.getUserRole());
+            // Şifreyi güncellemeyin, çünkü şifreyi istemci tarafında değiştirmelisiniz
+            userRepository.save(user); // Kullanıcıyı güncelliyoruz
+            return ResponseEntity.ok(user.toDTO()); // Güncellenmiş kullanıcıyı DTO olarak döndürüyoruz
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Kullanıcı bulunamadı
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
