@@ -19,10 +19,6 @@ public class OtelBackendApplication {
 		SpringApplication.run(OtelBackendApplication.class, args);
 	}
 
-	@EventListener(ApplicationReadyEvent.class)
-	public void initializeDefaultAdmin() {
-		authService.createDefaultAdmin(); // Admin hesabını kontrol edip oluşturuyoruz
-	}
 }
 
 

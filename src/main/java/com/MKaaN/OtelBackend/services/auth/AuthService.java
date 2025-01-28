@@ -36,29 +36,6 @@ public class AuthService {
         return passwordEncoder.matches(rawPassword, encodedPassword); // Şifreyi kontrol et
     }
 
-    // Admin hesabı oluşturma
-    public void createDefaultAdmin() {
-        Optional<User> existingAdmin = Optional.ofNullable(userRepository.findByEmail("admink@test.com"));
-
-        if (existingAdmin.isEmpty()) {
-            // Şifreyi hash'liyoruz
-            String encodedPassword = passwordEncoder.encode("admin1234");
-
-            // Yeni admin kullanıcı oluşturuyoruz
-            User admin = new User();
-            admin.setEmail("admink@test.com");
-            admin.setName("Admin");
-            admin.setPassword(encodedPassword);
-            admin.setUserRole(UserRole.ADMIN);
-
-            // Admin hesabını kaydediyoruz
-            userRepository.save(admin);
-            System.out.println("Default admin created successfully.");
-        } else {
-            System.out.println("Admin already exists.");
-        }
-    }
-
     // Kullanıcı giriş işlemi
     public String loginUser(String email, String password) {
         User user = getUserByEmail(email);  // Kullanıcıyı email ile buluyoruz

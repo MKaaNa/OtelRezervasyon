@@ -32,11 +32,6 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private UserRole userRole;
 
-    // Default constructor, userRole CUSTOMER olarak atanır
-    public User() {
-        this.userRole = UserRole.CUSTOMER;  // Yeni kullanıcılar için role otomatik olarak CUSTOMER atanır
-    }
-
     // Constructor with parameters for creating a user
     public User(String email, String password, String name) {
         this.email = email;
@@ -48,6 +43,10 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(userRole.name()));
+    }
+
+    public User(){
+
     }
 
     @Override
@@ -85,13 +84,13 @@ public class User implements UserDetails {
         return new User(email, password, name);
     }
 
+    public Long getId() {
+        return id;
+    }
+
     // Kullanıcının rolünü değiştirme işlemi
     public void changeUserRole(UserRole newRole) {
         this.userRole = newRole;
     }
 
-    // Kullanıcıyı bir DTO'ya dönüştürme (örneğin, frontend için)
-    public UserDTO toDTO() {
-        return new UserDTO(this.email, this.name, this.userRole);
-    }
 }
