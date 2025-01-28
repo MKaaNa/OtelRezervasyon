@@ -1,19 +1,26 @@
 package com.MKaaN.OtelBackend.utils;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public class JwtResponse {
+    // Getter ve Setter
+    @Getter
+    @Setter
     private String token;
+    private String userRole;
 
     // Constructor
-    public JwtResponse(String token) {
+    public JwtResponse(String token, String userRole) {
+        this.userRole = userRole;
         this.token = token;
     }
 
-    // Getter ve Setter
-    public String getToken() {
-        return token;
+    public String getRole() {
+        return userRole;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setRole(String role) {
+        this.userRole = role;
     }
 }

@@ -4,6 +4,7 @@ import com.MKaaN.OtelBackend.utils.JwtResponse;
 import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.services.auth.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +21,21 @@ public class AuthController {
 
         if (existingUser != null && authService.checkPassword(user.getPassword(), existingUser.getPassword())) {
             String token = authService.loginUser(user.getEmail(), user.getPassword());
-            return ResponseEntity.ok(new JwtResponse(token)); // Token'ı döndürüyoruz
+            String userRole = existingUser.getUserRole().name();
+            return ResponseEntity.ok(new JwtResponse(token, userRole)); // Token'ı döndürüyoruz
         } else {
-            return ResponseEntity.status(401).body(new JwtResponse("Invalid credentials"));
+            return ResponseEntity.status(401).body(new JwtResponse("Invalid credentials","Invalid credentials"));
+        }
+    }
+
+
+    @GetMapping(value = "user-info")
+    public ResponseEntity<User> getUserInfo(@RequestParam String email) {
+        User user = authService.getUserByEmail(email); // Email ile kullanıcıyı sorgula
+        if (user != null) {
+            return ResponseEntity.ok(user); // Kullanıcı bilgilerini döndür
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Kullanıcı bulunamazsa 404 döndür
         }
     }
 

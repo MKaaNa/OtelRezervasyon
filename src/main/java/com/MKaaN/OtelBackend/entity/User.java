@@ -1,5 +1,6 @@
 package com.MKaaN.OtelBackend.entity;
 
+import com.MKaaN.OtelBackend.enums.UserDTO;
 import com.MKaaN.OtelBackend.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -77,5 +78,20 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;  // Kullanıcı her zaman aktif kabul edilir
+    }
+
+    // Kullanıcıyı oluşturma işlemi
+    public static User createUser(String email, String password, String name) {
+        return new User(email, password, name);
+    }
+
+    // Kullanıcının rolünü değiştirme işlemi
+    public void changeUserRole(UserRole newRole) {
+        this.userRole = newRole;
+    }
+
+    // Kullanıcıyı bir DTO'ya dönüştürme (örneğin, frontend için)
+    public UserDTO toDTO() {
+        return new UserDTO(this.email, this.name, this.userRole);
     }
 }

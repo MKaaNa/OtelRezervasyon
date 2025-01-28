@@ -1,7 +1,7 @@
 package com.MKaaN.OtelBackend.services.auth;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder; // Daha soyut bir yapı kullanıldı
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.repository.UserRepository;
@@ -19,7 +19,8 @@ public class AuthServiceImpl extends AuthService {
 
     // Kullanıcıyı email ile alıyoruz
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null);
+        Optional<User> optionalUser = Optional.ofNullable(userRepository.findByEmail(email));
+        return optionalUser.orElse(null); // Eğer kullanıcı yoksa null döner
     }
 
     // Şifre doğrulama işlemi
