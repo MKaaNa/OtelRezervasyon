@@ -4,6 +4,7 @@ import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.enums.UserRole;
 import com.MKaaN.OtelBackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import io.jsonwebtoken.Jwts;
@@ -17,6 +18,7 @@ import java.security.Key;
 import java.util.Optional;
 
 @Service
+@Primary
 public class AuthService {
 
     @Autowired

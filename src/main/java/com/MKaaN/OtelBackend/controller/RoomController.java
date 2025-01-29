@@ -39,11 +39,42 @@ public class RoomController {
     }
 
     // Oda eklemek için POST metodu
-    @PostMapping("/add")
+    @PostMapping("")
     public ResponseEntity<Room> addRoom(@RequestBody Room room) {
         Room createdRoom = roomService.saveRoom(room);  // Odayı veritabanına kaydediyoruz
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRoom);  // 201 Created ile yanıt veriyoruz
     }
+
+    // Odayı güncellemek için PUT metodu
+    @PutMapping("/{id}")
+    public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody Room roomDetails) {
+        Room room = roomService.findRoomById(id);
+        if (room == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Oda bulunamadığında 404 döndür
+        }
+
+        // Güncellenmiş bilgileri odaya uygula
+        room.setRoomType(roomDetails.getRoomType());
+        room.setPrice(roomDetails.getPrice());
+        room.setStartDate(roomDetails.getStartDate());
+        room.setEndDate(roomDetails.getEndDate());
+
+        // Güncellenmiş odayı kaydet
+        Room updatedRoom = roomService.saveRoom(room);
+        return ResponseEntity.ok(updatedRoom);  // Güncellenmiş oda bilgisi ile 200 OK döndür
+    }
+
+    // Oda silmek için DELETE metodu
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
+        Room room = roomService.findRoomById(id);
+        if (room == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Oda bulunamadığında 404 döndür
+        }
+        roomService.deleteRoom(id);  // Odayı sil
+        return ResponseEntity.noContent().build();  // 204 No Content döndür
+    }
+
 }
 
 

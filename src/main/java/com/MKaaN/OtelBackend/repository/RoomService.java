@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RoomService {
@@ -23,6 +24,18 @@ public class RoomService {
             return roomRepository.findRoomsByTypeAndGuests(roomType, guestCount);
         }
     }
+
+    // Oda ID ile bul
+    public Room findRoomById(Long id) {
+        Optional<Room> room = roomRepository.findById(id);
+        return room.orElse(null);  // Oda bulunamazsa null döner
+    }
+
+    // Oda silme işlemi
+    public void deleteRoom(Long id) {
+        roomRepository.deleteById(id);
+    }
+
     // Oda kaydetme işlemi
     public Room saveRoom(Room room) {
         return roomRepository.save(room);  // Veritabanına kaydet
