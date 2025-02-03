@@ -13,7 +13,7 @@ import java.util.List;
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
     // Oda tipi, kişi sayısı ve tarih aralığına göre odaları sorgula
-    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount AND (r.startDate BETWEEN :startDate AND :endDate OR r.endDate BETWEEN :startDate AND :endDate)")
+    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount AND r.startDate <= :endDate AND r.endDate >= :startDate")
     List<Room> findRoomsByCriteria(
             @Param("roomType") String roomType,
             @Param("guestCount") Integer guestCount,

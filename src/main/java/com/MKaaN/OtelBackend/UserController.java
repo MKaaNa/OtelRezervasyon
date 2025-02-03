@@ -63,8 +63,6 @@ public class UserController {
         }
     }
 
-
-
     // Kullanıcıyı güncelleme endpoint'i
     @PutMapping("/users/{userId}")
     public ResponseEntity<UserDTO> updateUser(@PathVariable Long userId, @RequestBody User updatedUser) {
