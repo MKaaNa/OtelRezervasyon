@@ -2,6 +2,7 @@ package com.MKaaN.OtelBackend.entity;
 
 import com.MKaaN.OtelBackend.enums.UserDTO;
 import com.MKaaN.OtelBackend.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,13 +41,13 @@ public class User implements UserDetails {
         this.userRole = UserRole.CUSTOMER;  // Kayıt olan kullanıcıya otomatik olarak CUSTOMER rolü verilir
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(userRole.name()));
+    public User() {
     }
 
-    public User(){
-
+    @Override
+    @JsonIgnore  // Bu anotasyon, authorities bilgisinin JSON serileştirmesine dahil edilmemesini sağlar.
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(userRole.name()));
     }
 
     @Override
@@ -97,5 +98,4 @@ public class User implements UserDetails {
     public void changeUserRole(UserRole newRole) {
         this.userRole = newRole;
     }
-
 }
