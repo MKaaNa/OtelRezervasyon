@@ -20,8 +20,9 @@ public class RoomService {
             // Tarihler verilmişse, tarih filtresi ile odaları al
             return roomRepository.findRoomsByCriteria(roomType, guestCount, startDate, endDate);
         } else {
-            // Tarihler verilmemişse, sadece oda tipi ve kişi sayısına göre odaları al
-            return roomRepository.findRoomsByTypeAndGuests(roomType, guestCount);
+            // Eğer tarih girilmemişse, bugünden sonraki müsait odaları getir
+            LocalDate today = LocalDate.now();
+            return roomRepository.findAvailableRoomsAfter(roomType, guestCount, today);
         }
     }
 
@@ -46,5 +47,3 @@ public class RoomService {
         return roomRepository.findAll();
     }
 }
-
-

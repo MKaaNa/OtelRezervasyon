@@ -13,20 +13,21 @@ import java.time.LocalDate;
 @Entity
 public class Room {
 
-    // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String roomType;
+    private String roomType;      // "single", "double", "suite" gibi değerler alır.
     private Integer guestCount;
-    private Double price;
+    private Double price;         // Günlük fiyat
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    private LocalDate startDate;  // Başlangıç tarihi
+    private LocalDate startDate;  // Odaların müsaitlik başlangıç tarihi
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    private LocalDate endDate;    // Bitiş tarihi
+    private LocalDate endDate;    // Odaların müsaitlik bitiş tarihi
+
+    // Getters ve Setters
 
     public void setId(Long id) {
         this.id = id;
@@ -34,6 +35,22 @@ public class Room {
 
     public void setRoomType(String roomType) {
         this.roomType = roomType;
+        // Oda tipine göre varsayılan fiyat ataması
+        if (roomType != null) {
+            switch (roomType.toLowerCase()) {
+                case "single":
+                    this.price = 350.0;
+                    break;
+                case "double":
+                    this.price = 450.0;
+                    break;
+                case "suite":
+                    this.price = 800.0;
+                    break;
+                default:
+                    this.price = 0.0; // Bilinmeyen oda tipi için
+            }
+        }
     }
 
     public void setGuestCount(Integer guestCount) {
