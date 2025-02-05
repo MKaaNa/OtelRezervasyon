@@ -49,6 +49,7 @@ public class AuthService {
         // Token oluşturuluyor
         Map<String, Object> claims = new HashMap<>();
         claims.put("sub", email);
+        claims.put("id", user.getId());           // Kullanıcı ID'sini ekliyoruz
         claims.put("name", user.getName());  // Kullanıcı adı ekleniyor
         claims.put("created", new Date());
         claims.put("role", user.getUserRole().name());  // Kullanıcının rolünü ekleniyor
