@@ -8,8 +8,12 @@ import com.MKaaN.OtelBackend.enums.ReservationStatus;
 import com.MKaaN.OtelBackend.repository.UserRepository;
 import com.MKaaN.OtelBackend.repository.RoomRepository;
 import com.MKaaN.OtelBackend.repository.ReservationRepository;
+import com.MKaaN.OtelBackend.service.InvoiceService;
+import com.MKaaN.OtelBackend.service.Invoice;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,39 +35,32 @@ public class ReservationController {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    // Mevcut createReservation fonksiyonu
+    @Autowired
+    private InvoiceService invoiceService;
+
+    // createReservation, calculatePrice, deleteReservation, getAllReservations, updateReservation endpoint’leri mevcut.
+    // Örneğin, createReservation aşağıdaki gibi:
     @PostMapping("/create")
     public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservation) {
         try {
-            // Kullanıcı ID kontrolü
             if (reservation.getUser() == null || reservation.getUser().getId() == null) {
                 throw new IllegalArgumentException("Invalid user ID");
             }
-            // Oda ID kontrolü
             if (reservation.getRoom() == null || reservation.getRoom().getId() == null) {
                 throw new IllegalArgumentException("Invalid room ID");
             }
-            // Kullanıcıyı ve odayı veritabanından al
             User user = userRepository.findById(reservation.getUser().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             Room room = roomRepository.findById(reservation.getRoom().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid room ID"));
-
-            // Rezervasyon tarihleri kontrolü
             if (reservation.getStartDate() == null || reservation.getEndDate() == null) {
                 throw new IllegalArgumentException("Reservation dates must be provided");
             }
-
-            // java.util.Date'ten LocalDate'e dönüşüm
             LocalDate resStart = reservation.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             LocalDate resEnd = reservation.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-            // Odanın müsaitlik tarihleri kontrolü (oda tarihleri LocalDate tipinde)
             if (room.getStartDate() == null || room.getEndDate() == null) {
                 throw new IllegalArgumentException("Room availability dates are not set");
             }
-
-            // Rezervasyonun oda müsaitlik aralığı içinde olması gerekiyor:
             if (resStart.isBefore(room.getStartDate())) {
                 throw new IllegalArgumentException("Reservation cannot start before room's available start date: " + room.getStartDate());
             }
@@ -73,23 +70,14 @@ public class ReservationController {
             if (!resEnd.isAfter(resStart)) {
                 throw new IllegalArgumentException("Reservation end date must be after start date");
             }
-            // (Şimdilik) Rezervasyonun başlangıç tarihi, odanın müsaitlik başlangıcına eşit olmalı.
             if (!resStart.equals(room.getStartDate())) {
                 throw new IllegalArgumentException("For now, reservation must start at the room's available start date: " + room.getStartDate());
             }
-
-            // Tüm kontroller geçtiyse, kullanıcı ve oda bilgilerini rezervasyona ata
             reservation.setUser(user);
             reservation.setRoom(room);
-
-            // Rezervasyonu kaydet (Reservation entity'nin prePersist metodu totalPrice ve status ayarlarını yapar)
             Reservation savedReservation = reservationRepository.save(reservation);
-
-            // Rezervasyon yapıldıktan sonra, odanın müsaitlik başlangıcını güncelle:
-            // Yeni müsaitlik başlangıcı, rezervasyonun bitiş tarihi (LocalDate)
             room.setStartDate(resEnd);
             roomRepository.save(room);
-
             return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
         } catch (IllegalArgumentException e) {
             System.out.println("Error creating reservation: " + e.getMessage());
@@ -100,28 +88,20 @@ public class ReservationController {
         }
     }
 
-    // calculate-price endpoint (mevcut)
     @PostMapping("/calculate-price")
     public ResponseEntity<Double> calculatePrice(@RequestBody PriceCalculationRequest request) {
         try {
             Room room = roomRepository.findById(request.getRoomId())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid room ID"));
-
             if (request.getStartDate() == null || request.getEndDate() == null) {
                 throw new IllegalArgumentException("Reservation dates must be provided");
             }
-
-            // Tarihleri LocalDate'e dönüştürelim
             LocalDate resStart = request.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             LocalDate resEnd = request.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
-            // Rezervasyon süresini gün olarak hesapla
             long daysBetween = ChronoUnit.DAYS.between(resStart, resEnd);
             if (daysBetween <= 0) {
                 throw new IllegalArgumentException("Reservation must be at least one day long.");
             }
-
-            // Toplam ücreti hesapla: gün sayısı * oda günlük fiyatı
             double totalPrice = daysBetween * room.getPrice();
             return ResponseEntity.ok(totalPrice);
         } catch (IllegalArgumentException e) {
@@ -135,25 +115,19 @@ public class ReservationController {
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
         try {
             reservationRepository.deleteById(id);
-            return ResponseEntity.noContent().build();  // 204 No Content
+            return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            // Hata durumunda
             System.out.println("Error deleting reservation: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Admin: Tüm rezervasyonları listele
     @GetMapping
     public ResponseEntity<List<Reservation>> getAllReservations() {
-        // Bu endpoint için, ReservationService.getAllReservations() metodunu kullanabilirsiniz.
-        // Örneğin: List<Reservation> reservations = reservationService.getAllReservations();
-        // Eğer ReservationService bean’ini eklemediyseniz, direkt repository üzerinden de çağırabilirsiniz.
         List<Reservation> reservations = reservationRepository.findAll();
         return ResponseEntity.ok(reservations);
     }
 
-    // Admin: Rezervasyonu güncelle (status, tarih, adminNote)
     @PutMapping("/{id}")
     public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody Reservation updatedReservation) {
         try {
@@ -173,19 +147,39 @@ public class ReservationController {
         }
     }
 
-    // Admin: Rezervasyonu ödeme alarak PAID statüsüne çevir (simülasyon)
-    @PutMapping("/{id}/pay")
-    public ResponseEntity<Reservation> markReservationAsPaid(@PathVariable Long id) {
+    // Ödeme endpoint: Rezervasyonu PAID yapar ve basit Invoice DTO döndürür.
+    @PutMapping(value = "/{id}/pay", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Invoice> markReservationAsPaid(@PathVariable Long id) {
         try {
             Reservation existing = reservationRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+
+            if (existing.getStatus() != ReservationStatus.APPROVED) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+
             existing.setStatus(ReservationStatus.PAID);
             Reservation saved = reservationRepository.save(existing);
-            return ResponseEntity.ok(saved);
+
+            Invoice invoice = invoiceService.generateInvoice(saved);
+            return ResponseEntity.ok(invoice);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // Fatura TXT dosyasını döndüren endpoint
+    @GetMapping(value = "/invoice/{reservationId}", produces = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<byte[]> getInvoiceTxt(@PathVariable Long reservationId) {
+        try {
+            byte[] txtBytes = invoiceService.generateInvoiceTxt(reservationId);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".txt")
+                    .body(txtBytes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

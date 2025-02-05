@@ -10,6 +10,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();  // BCrypt şifreleme algoritmasını kullanıyoruz
+        return new BCryptPasswordEncoder();
     }
 }

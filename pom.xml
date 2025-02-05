@@ -4,6 +4,13 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+	<repositories>
+		<repository>
+			<id>maven-central</id>
+			<url>https://repo.maven.apache.org/maven2/</url>
+		</repository>
+	</repositories>
+
 	<!-- Maven POM'un ana modeli -->
 	<modelVersion>4.0.0</modelVersion>
 
@@ -56,7 +63,6 @@
 			<artifactId>jjwt-impl</artifactId>
 			<version>0.11.5</version>
 		</dependency>
-
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
@@ -95,6 +101,14 @@
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
 			<scope>runtime</scope>
+		</dependency>
+
+
+		<!-- https://mvnrepository.com/artifact/com.github.librepdf/openpdf -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>1.3.30</version>
 		</dependency>
 
 		<!-- ========== LOMBOK ========== -->
