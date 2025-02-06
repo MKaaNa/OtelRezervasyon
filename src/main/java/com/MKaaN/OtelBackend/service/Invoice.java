@@ -4,7 +4,7 @@ public class Invoice {
     private Long reservationId;
     private String invoiceNumber;
     private String userEmail;
-    private String paymentDate;  // ISO formatında tarih
+    private String paymentDate;  // ISO formatında tarih, örn: "2025-02-05"
     private double totalAmount;
     private String details;
 
@@ -17,25 +17,41 @@ public class Invoice {
         this.details = details;
     }
 
-    public Invoice(Long id) {
+    // Getter ve Setter'lar
+    public Long getReservationId() {
+        return reservationId;
     }
-
-    // Getter ve Setter'lar...
-    public Long getReservationId() { return reservationId; }
-    public void setReservationId(Long reservationId) { this.reservationId = reservationId; }
-
-    public String getInvoiceNumber() { return invoiceNumber; }
-    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
-
-    public String getUserEmail() { return userEmail; }
-    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
-
-    public String getPaymentDate() { return paymentDate; }
-    public void setPaymentDate(String paymentDate) { this.paymentDate = paymentDate; }
-
-    public double getTotalAmount() { return totalAmount; }
-    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
-
-    public String getDetails() { return details; }
-    public void setDetails(String details) { this.details = details; }
+    public void setReservationId(Long reservationId) {
+        this.reservationId = reservationId;
+    }
+    public String getInvoiceNumber() {
+        return invoiceNumber;
+    }
+    public void setInvoiceNumber(String invoiceNumber) {
+        this.invoiceNumber = invoiceNumber;
+    }
+    public String getUserEmail() {
+        return userEmail;
+    }
+    public void setUserEmail(String userEmail) {
+        this.userEmail = userEmail;
+    }
+    public String getPaymentDate() {
+        return paymentDate;
+    }
+    public void setPaymentDate(String paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+    public void setTotalAmount(double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+    public String getDetails() {
+        return details;
+    }
+    public void setDetails(String details) {
+        this.details = details;
+    }
 }

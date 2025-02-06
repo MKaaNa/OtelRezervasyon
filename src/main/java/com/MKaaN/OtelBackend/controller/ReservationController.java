@@ -39,7 +39,6 @@ public class ReservationController {
     private InvoiceService invoiceService;
 
     // createReservation, calculatePrice, deleteReservation, getAllReservations, updateReservation endpoint’leri mevcut.
-    // Örneğin, createReservation aşağıdaki gibi:
     @PostMapping("/create")
     public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservation) {
         try {
@@ -147,37 +146,43 @@ public class ReservationController {
         }
     }
 
-    // Ödeme endpoint: Rezervasyonu PAID yapar ve basit Invoice DTO döndürür.
     @PutMapping(value = "/{id}/pay", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Invoice> markReservationAsPaid(@PathVariable Long id) {
+    public ResponseEntity<byte[]> markReservationAsPaid(@PathVariable Long id) {
         try {
             Reservation existing = reservationRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
+            // Sadece APPROVED olan rezervasyonlar için ödeme yapılabilir
             if (existing.getStatus() != ReservationStatus.APPROVED) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
 
+            // Ödeme simülasyonu -> Rezervasyon PAID olarak işaretleniyor
             existing.setStatus(ReservationStatus.PAID);
-            Reservation saved = reservationRepository.save(existing);
+            reservationRepository.save(existing);
 
-            Invoice invoice = invoiceService.generateInvoice(saved);
-            return ResponseEntity.ok(invoice);
+            // **Fatura PDF oluştur**
+            byte[] invoicePdf = invoiceService.generateInvoice(existing);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + id + ".pdf")
+                    .body(invoicePdf);
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Fatura TXT dosyasını döndüren endpoint
-    @GetMapping(value = "/invoice/{reservationId}", produces = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<byte[]> getInvoiceTxt(@PathVariable Long reservationId) {
+    // PDF fatura dosyasını döndüren endpoint
+    @GetMapping(value = "/invoice/{reservationId}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable Long reservationId) {
         try {
-            byte[] txtBytes = invoiceService.generateInvoiceTxt(reservationId);
+            byte[] pdfBytes = invoiceService.generateInvoicePdf(reservationId);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".txt")
-                    .body(txtBytes);
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".pdf")
+                    .body(pdfBytes);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
