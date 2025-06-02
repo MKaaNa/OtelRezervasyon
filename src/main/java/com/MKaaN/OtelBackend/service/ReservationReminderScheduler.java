@@ -25,7 +25,7 @@ public class ReservationReminderScheduler {
     @Scheduled(cron = "0 0 8 * * ?")
     public void sendReservationReminders() {
         LocalDate today = LocalDate.now();
-        LocalDate reminderDate = today.plusDays(1);
+        LocalDate reminderDate = today.plusDays(1); //Dateutils utilin altında olacak
 
         List<Reservation> reservations = reservationRepository.findAll();
         for (Reservation reservation : reservations) {

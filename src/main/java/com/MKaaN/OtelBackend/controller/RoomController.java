@@ -50,7 +50,7 @@ public class RoomController {
     public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody Room roomDetails) {
         Room room = roomService.findRoomById(id);
         if (room == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Oda bulunamadığında 404 döndür
+            throw new IllegalArgumentException("Oda bulunamadı.");
         }
 
         // Güncellenmiş bilgileri odaya uygula
@@ -61,7 +61,7 @@ public class RoomController {
 
         // Güncellenmiş odayı kaydet
         Room updatedRoom = roomService.saveRoom(room);
-        return ResponseEntity.ok(updatedRoom);  // Güncellenmiş oda bilgisi ile 200 OK döndür
+        return ResponseEntity.ok(updatedRoom);
     }
 
     // Oda silmek için DELETE metodu
@@ -69,10 +69,10 @@ public class RoomController {
     public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         Room room = roomService.findRoomById(id);
         if (room == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);  // Oda bulunamadığında 404 döndür
+            throw new IllegalArgumentException("Oda bulunamadı.");
         }
-        roomService.deleteRoom(id);  // Odayı sil
-        return ResponseEntity.noContent().build();  // 204 No Content döndür
+        roomService.deleteRoom(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

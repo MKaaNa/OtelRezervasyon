@@ -33,9 +33,9 @@ public class Reservation {
     private Double totalPrice;
 
     @Enumerated(EnumType.STRING)
-    private ReservationStatus status;  // Örneğin: PENDING, APPROVED, REJECTED, PAID
+    private ReservationStatus status;  // PENDING, APPROVED, REJECTED, PAID
 
-    private String adminNote; // Opsiyonel, admin düzenleme notu
+    private String adminNote; 
 
     // Toplam fiyatı hesaplar: (konaklama süresi (gün) * oda günlük fiyatı)
     public void calculateTotalPrice() {

@@ -29,26 +29,15 @@ public class InvoiceController {
      * @return PDF içeriğini döndürür
      */
     @GetMapping(value = "/invoice/{reservationId}", produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable Long reservationId) {
-        try {
-            System.out.println("Generating invoice for reservation ID: " + reservationId);
+    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable Long reservationId) throws Exception {
+        // Reservation kontrolü
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found with ID: " + reservationId));
 
-            // Reservation kontrolü
-            Reservation reservation = reservationRepository.findById(reservationId)
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found with ID: " + reservationId));
+        byte[] pdfBytes = invoiceService.generateInvoicePdf(reservationId);
 
-            byte[] pdfBytes = invoiceService.generateInvoicePdf(reservationId);
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".pdf")
-                    .body(pdfBytes);
-        } catch (IllegalArgumentException e) {
-            System.err.println("Invalid reservation ID: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            System.err.println("Unexpected error generating invoice: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".pdf")
+                .body(pdfBytes);
     }
 }

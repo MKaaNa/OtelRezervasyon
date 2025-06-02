@@ -38,87 +38,59 @@ public class ReservationController {
     @Autowired
     private InvoiceService invoiceService;
 
-    // createReservation, calculatePrice, deleteReservation, getAllReservations, updateReservation endpoint’leri mevcut.
+    // createReservation, calculatePrice, deleteReservation, getAllReservations, updateReservation endpoint'leri mevcut.
     @PostMapping("/create")
-    public ResponseEntity<Reservation> createReservation(@RequestBody Reservation reservation) {
-        try {
-            if (reservation.getUser() == null || reservation.getUser().getId() == null) {
-                throw new IllegalArgumentException("Invalid user ID");
-            }
-            if (reservation.getRoom() == null || reservation.getRoom().getId() == null) {
-                throw new IllegalArgumentException("Invalid room ID");
-            }
-            User user = userRepository.findById(reservation.getUser().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
-            Room room = roomRepository.findById(reservation.getRoom().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid room ID"));
-            if (reservation.getStartDate() == null || reservation.getEndDate() == null) {
-                throw new IllegalArgumentException("Reservation dates must be provided");
-            }
-            LocalDate resStart = reservation.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate resEnd = reservation.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            if (room.getStartDate() == null || room.getEndDate() == null) {
-                throw new IllegalArgumentException("Room availability dates are not set");
-            }
-            if (resStart.isBefore(room.getStartDate())) {
-                throw new IllegalArgumentException("Reservation cannot start before room's available start date: " + room.getStartDate());
-            }
-            if (resEnd.isAfter(room.getEndDate())) {
-                throw new IllegalArgumentException("Reservation end date must be within the room's available end date: " + room.getEndDate());
-            }
-            if (!resEnd.isAfter(resStart)) {
-                throw new IllegalArgumentException("Reservation end date must be after start date");
-            }
-            if (!resStart.equals(room.getStartDate())) {
-                throw new IllegalArgumentException("For now, reservation must start at the room's available start date: " + room.getStartDate());
-            }
-            reservation.setUser(user);
-            reservation.setRoom(room);
-            Reservation savedReservation = reservationRepository.save(reservation);
-            room.setStartDate(resEnd);
-            roomRepository.save(room);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error creating reservation: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            System.out.println("Unexpected error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    public ResponseEntity<?> createReservation(@RequestBody Reservation reservation) {
+        if (reservation.getUser() == null || reservation.getUser().getId() == null) {
+            throw new IllegalArgumentException("Geçersiz kullanıcı ID'si.");
         }
+        if (reservation.getRoom() == null || reservation.getRoom().getId() == null) {
+            throw new IllegalArgumentException("Geçersiz oda ID'si.");
+        }
+        User user = userRepository.findById(reservation.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Kullanıcı bulunamadı. Lütfen kullanıcı veritabanında mevcut mu kontrol edin."));
+        reservation.setUser(user);
+
+        Room room = roomRepository.findById(reservation.getRoom().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Oda bulunamadı. Lütfen oda veritabanında mevcut mu kontrol edin."));
+        reservation.setRoom(room);
+
+        // Oda ve tarih aralığı çakışma kontrolü
+        if (reservationRepository.existsByRoomIdAndDateRange(
+                reservation.getRoom().getId(),
+                reservation.getStartDate(),
+                reservation.getEndDate())) {
+            throw new IllegalArgumentException("Bu oda, seçilen tarihlerde zaten rezerve edilmiş.");
+        }
+
+        reservation.calculateTotalPrice();
+        reservation.setStatus(ReservationStatus.PENDING);
+
+        Reservation savedReservation = reservationRepository.save(reservation);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedReservation);
     }
 
     @PostMapping("/calculate-price")
     public ResponseEntity<Double> calculatePrice(@RequestBody PriceCalculationRequest request) {
-        try {
-            Room room = roomRepository.findById(request.getRoomId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid room ID"));
-            if (request.getStartDate() == null || request.getEndDate() == null) {
-                throw new IllegalArgumentException("Reservation dates must be provided");
-            }
-            LocalDate resStart = request.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            LocalDate resEnd = request.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            long daysBetween = ChronoUnit.DAYS.between(resStart, resEnd);
-            if (daysBetween <= 0) {
-                throw new IllegalArgumentException("Reservation must be at least one day long.");
-            }
-            double totalPrice = daysBetween * room.getPrice();
-            return ResponseEntity.ok(totalPrice);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        Room room = roomRepository.findById(request.getRoomId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid room ID"));
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new IllegalArgumentException("Reservation dates must be provided");
         }
+        LocalDate resStart = request.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate resEnd = request.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        long daysBetween = ChronoUnit.DAYS.between(resStart, resEnd);
+        if (daysBetween <= 0) {
+            throw new IllegalArgumentException("Reservation must be at least one day long.");
+        }
+        double totalPrice = daysBetween * room.getPrice();
+        return ResponseEntity.ok(totalPrice);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {
-        try {
-            reservationRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            System.out.println("Error deleting reservation: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        reservationRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
@@ -129,62 +101,45 @@ public class ReservationController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Reservation> updateReservation(@PathVariable Long id, @RequestBody Reservation updatedReservation) {
-        try {
-            Reservation existing = reservationRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
-            existing.setStatus(updatedReservation.getStatus());
-            existing.setStartDate(updatedReservation.getStartDate());
-            existing.setEndDate(updatedReservation.getEndDate());
-            existing.setAdminNote(updatedReservation.getAdminNote());
-            existing.calculateTotalPrice();
-            Reservation saved = reservationRepository.save(existing);
-            return ResponseEntity.ok(saved);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        Reservation existing = reservationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+        existing.setStatus(updatedReservation.getStatus());
+        existing.setStartDate(updatedReservation.getStartDate());
+        existing.setEndDate(updatedReservation.getEndDate());
+        existing.setAdminNote(updatedReservation.getAdminNote());
+        existing.calculateTotalPrice();
+        Reservation saved = reservationRepository.save(existing);
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping(value = "/{id}/pay", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<byte[]> markReservationAsPaid(@PathVariable Long id) {
-        try {
-            Reservation existing = reservationRepository.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
+    public ResponseEntity<byte[]> markReservationAsPaid(@PathVariable Long id) throws Exception {
+        Reservation existing = reservationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reservation not found"));
 
-            // Sadece APPROVED olan rezervasyonlar için ödeme yapılabilir
-            if (existing.getStatus() != ReservationStatus.APPROVED) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
-
-            // Ödeme simülasyonu -> Rezervasyon PAID olarak işaretleniyor
-            existing.setStatus(ReservationStatus.PAID);
-            reservationRepository.save(existing);
-
-            // **Fatura PDF oluştur**
-            byte[] invoicePdf = invoiceService.generateInvoice(existing);
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + id + ".pdf")
-                    .body(invoicePdf);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        // Sadece APPROVED olan rezervasyonlar için ödeme yapılabilir
+        if (existing.getStatus() != ReservationStatus.APPROVED) {
+            throw new IllegalArgumentException("Sadece onaylanmış rezervasyonlar için ödeme yapılabilir.");
         }
+
+        // Ödeme simülasyonu -> Rezervasyon PAID olarak işaretleniyor
+        existing.setStatus(ReservationStatus.PAID);
+        reservationRepository.save(existing);
+
+        // **Fatura PDF oluştur**
+        byte[] invoicePdf = invoiceService.generateInvoice(existing);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + id + ".pdf")
+                .body(invoicePdf);
     }
 
     // PDF fatura dosyasını döndüren endpoint
     @GetMapping(value = "/invoice/{reservationId}", produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable Long reservationId) {
-        try {
-            byte[] pdfBytes = invoiceService.generateInvoicePdf(reservationId);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".pdf")
-                    .body(pdfBytes);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable Long reservationId) throws Exception {
+        byte[] pdfBytes = invoiceService.generateInvoicePdf(reservationId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=invoice_" + reservationId + ".pdf")
+                .body(pdfBytes);
     }
 }

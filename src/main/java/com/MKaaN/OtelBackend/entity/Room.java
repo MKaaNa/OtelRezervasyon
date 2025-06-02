@@ -68,4 +68,24 @@ public class Room {
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Double getPrice() {
+        return price;
+    }
+
+    public String getRoomType() {
+        return roomType;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
 }

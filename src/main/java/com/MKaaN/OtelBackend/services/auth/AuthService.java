@@ -69,6 +69,12 @@ public class AuthService {
 
     // Kullanıcı kaydetme işlemi
     public void registerUser(User user) {
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            throw new IllegalArgumentException("Bu email ile zaten bir kullanıcı var.");
+        }
+        if (user.getUserRole() == null) {
+            user.setUserRole(UserRole.CUSTOMER);
+        }
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);
         userRepository.save(user); // Yeni kullanıcıyı kaydediyoruz

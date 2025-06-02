@@ -21,6 +21,7 @@ public class User implements UserDetails {
     private Long id;
 
     @Getter @Setter
+    @Column(unique = true)
     private String email;
 
     @Getter @Setter
@@ -56,11 +57,6 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getPassword() {
-        return password;  // Şifreyi döndürüyoruz
-    }
-
-    @Override
     public boolean isAccountNonExpired() {
         return true;
     }
@@ -80,6 +76,11 @@ public class User implements UserDetails {
         return true;  // Kullanıcı her zaman aktif kabul edilir
     }
 
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
     // Kullanıcıyı oluşturma işlemi
     public static User createUser(String email, String password, String name) {
         return new User(email, password, name);
@@ -97,5 +98,27 @@ public class User implements UserDetails {
     // Kullanıcının rolünü değiştirme işlemi
     public void changeUserRole(UserRole newRole) {
         this.userRole = newRole;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+    public UserRole getUserRole() {
+        return userRole;
+    }
+    public void setUserRole(UserRole userRole) {
+        this.userRole = userRole;
+    }
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
