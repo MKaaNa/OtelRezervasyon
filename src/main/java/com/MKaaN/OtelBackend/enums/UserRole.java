@@ -1,6 +1,17 @@
 package com.MKaaN.OtelBackend.enums;
 
 public enum UserRole {
-    ADMIN,
-    CUSTOMER
+    USER("Kullanıcı"),
+    ADMIN("Yönetici"),
+    STAFF("Personel");
+
+    private final String displayName;
+
+    UserRole(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 }

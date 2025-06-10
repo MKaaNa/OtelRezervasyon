@@ -2,10 +2,15 @@ package com.MKaaN.OtelBackend.repository;
 
 import com.MKaaN.OtelBackend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-
-        // Email ile kullanıcıyı bulma
-        User findByEmail(String email);
-}
+@Repository
+public interface UserRepository extends JpaRepository<User, String> {
+    // Email ile kullanıcı bul
+    Optional<User> findByEmail(String email);
+    
+    // Email ile kullanıcı var mı kontrol et
+    boolean existsByEmail(String email);
+} 

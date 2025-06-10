@@ -1,81 +1,59 @@
 package com.MKaaN.OtelBackend.controller;
 
-import com.MKaaN.OtelBackend.entity.Room;
-import com.MKaaN.OtelBackend.repository.RoomService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDate;
-import org.springframework.format.annotation.DateTimeFormat;
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.MKaaN.OtelBackend.dto.ApiResponse;
+import com.MKaaN.OtelBackend.dto.RoomDTO;
+import com.MKaaN.OtelBackend.service.room.IRoomService;
+
+import jakarta.validation.Valid;
+
 @RestController
-@RequestMapping("/rooms")
+@RequestMapping("/api/rooms")
+@RequiredArgsConstructor
 public class RoomController {
 
-    @Autowired
-    private RoomService roomService;
+    private final IRoomService roomService;
 
-    // Odanın türüne, kişi sayısına ve tarih aralığına göre filtreli odaları döndür
+
     @GetMapping
-    public ResponseEntity<List<Room>> getRooms(
-            @RequestParam(required = false) String roomType,
-            @RequestParam(required = false) Integer guestCount,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
-
-        List<Room> rooms;
-
-        // Eğer hiçbir filtre verilmemişse, tüm odaları döndür
-        if (roomType == null && guestCount == null && startDate == null && endDate == null) {
-            rooms = roomService.findAllRooms();  // Tüm odaları al
-        } else {
-            rooms = roomService.getRooms(roomType, guestCount, startDate, endDate);  // Filtre ile odaları al
-        }
-
-        return ResponseEntity.ok(rooms);
+    public ApiResponse<List<RoomDTO>> getAll() {
+        return ApiResponse.success(roomService.getAll());
     }
 
-    // Oda eklemek için POST metodu
-    @PostMapping("")
-    public ResponseEntity<Room> addRoom(@RequestBody Room room) {
-        Room createdRoom = roomService.saveRoom(room);  // Odayı veritabanına kaydediyoruz
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdRoom);  // 201 Created ile yanıt veriyoruz
+    @GetMapping("/{id}")
+    public ApiResponse<RoomDTO> get(@PathVariable String id) {
+        return ApiResponse.success(roomService.getById(id));
     }
 
-    // Odayı güncellemek için PUT metodu
+    @PostMapping
+    public ApiResponse<RoomDTO> add(@Valid @RequestBody RoomDTO roomDTO) {
+        return ApiResponse.success(roomService.create(roomDTO));
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Room> updateRoom(@PathVariable Long id, @RequestBody Room roomDetails) {
-        Room room = roomService.findRoomById(id);
-        if (room == null) {
-            throw new IllegalArgumentException("Oda bulunamadı.");
-        }
-
-        // Güncellenmiş bilgileri odaya uygula
-        room.setRoomType(roomDetails.getRoomType());
-        room.setPrice(roomDetails.getPrice());
-        room.setStartDate(roomDetails.getStartDate());
-        room.setEndDate(roomDetails.getEndDate());
-
-        // Güncellenmiş odayı kaydet
-        Room updatedRoom = roomService.saveRoom(room);
-        return ResponseEntity.ok(updatedRoom);
+    public ApiResponse<RoomDTO> edit(@PathVariable String id, @Valid @RequestBody RoomDTO roomDTO) {
+        return ApiResponse.success(roomService.update(id, roomDTO));
     }
 
-    // Oda silmek için DELETE metodu
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
-        Room room = roomService.findRoomById(id);
-        if (room == null) {
-            throw new IllegalArgumentException("Oda bulunamadı.");
-        }
-        roomService.deleteRoom(id);
-        return ResponseEntity.noContent().build();
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        roomService.delete(id);
+        return ApiResponse.success(null);
     }
 
+    @GetMapping("/available")
+    public ApiResponse<List<RoomDTO>> getAvailable() {
+        return ApiResponse.success(roomService.getAvailable());
+    }
 }
-
-
-

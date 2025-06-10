@@ -1,35 +1,36 @@
 package com.MKaaN.OtelBackend.repository;
 
-import com.MKaaN.OtelBackend.entity.Room;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.MKaaN.OtelBackend.entity.Room;
+import com.MKaaN.OtelBackend.enums.RoomType;
 
 @Repository
-public interface RoomRepository extends JpaRepository<Room, Long> {
+public interface RoomRepository extends JpaRepository<Room, String> {
 
-    // Mevcut sorgu: Oda tipi, kişi sayısı ve tarih aralığına göre odaları sorgula
-    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount AND (r.startDate BETWEEN :startDate AND :endDate OR r.endDate BETWEEN :startDate AND :endDate)")
-    List<Room> findRoomsByCriteria(
-            @Param("roomType") String roomType,
-            @Param("guestCount") Integer guestCount,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate);
+    List<Room> findByRoomTypeAndGuestCount(RoomType roomType, Integer guestCount);
+    long countByRoomTypeAndGuestCount(RoomType roomType, Integer guestCount);
+    
+    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount " +
+           "AND r.id NOT IN (SELECT res.room.id FROM Reservation res " +
+           "WHERE res.status = 'CONFIRMED' AND " +
+           "((res.startDate <= :endDate AND res.endDate >= :startDate)))")
+    List<Room> findAvailable(@Param("roomType") RoomType roomType,
+                           @Param("guestCount") Integer guestCount,
+                           @Param("startDate") LocalDate startDate,
+                           @Param("endDate") LocalDate endDate);
+    @Query("SELECT r FROM Room r " +
+           "WHERE (:roomType IS NULL OR r.roomType = :roomType) " +
+           "AND (:guestCount IS NULL OR r.guestCount = :guestCount) " +
+           "AND r.available = true")
+    List<Room> findAvailable(@Param("roomType") RoomType roomType,
+                           @Param("guestCount") Integer guestCount);
 
-    // Yeni sorgu: Sadece oda tipi ve misafir sayısı girildiğinde, bugünden sonraki müsait odaları getir
-    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount AND r.startDate >= :today")
-    List<Room> findAvailableRoomsAfter(
-            @Param("roomType") String roomType,
-            @Param("guestCount") Integer guestCount,
-            @Param("today") LocalDate today);
-
-    // Sadece oda tipi ve misafir sayısına göre odaları sorgulayan mevcut metot (eski versiyon, gerekirse kullanılabilir)
-    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.guestCount = :guestCount")
-    List<Room> findRoomsByTypeAndGuests(
-            @Param("roomType") String roomType,
-            @Param("guestCount") Integer guestCount);
-}
+    List<Room> findByAvailableTrue(); //Projection için kullanılabilir
+} 

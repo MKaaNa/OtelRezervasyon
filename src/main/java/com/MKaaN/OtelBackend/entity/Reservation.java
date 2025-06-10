@@ -1,121 +1,272 @@
 package com.MKaaN.OtelBackend.entity;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.GenericGenerator;
+
 import com.MKaaN.OtelBackend.enums.ReservationStatus;
-import jakarta.persistence.*;
-import java.util.Date;
+import com.MKaaN.OtelBackend.util.DateUtils;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
 @Entity
+@Table(name = "reservations")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Reservation {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "uuid")
+    @GenericGenerator(name = "uuid", strategy = "uuid2")
+    @Column(name = "id", columnDefinition = "VARCHAR(36)")
+    private String id;
 
-    // Kullanıcı bilgisi
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    // Oda bilgisi
-    @ManyToOne
-    @JoinColumn(name = "room_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", columnDefinition = "VARCHAR(36)")
     private Room room;
 
-    @Temporal(TemporalType.DATE)
-    private Date startDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", columnDefinition = "VARCHAR(36)")
+    private User user;
 
-    @Temporal(TemporalType.DATE)
-    private Date endDate;
+    @Column(nullable = false)
+    private LocalDate startDate;
 
+    @Column(nullable = false)
+    private LocalDate endDate;
+
+    @Column(nullable = false)
     private int guestCount;
 
-    @Column(name = "total_price", nullable = false)
-    private Double totalPrice;
-
     @Enumerated(EnumType.STRING)
-    private ReservationStatus status;  // PENDING, APPROVED, REJECTED, PAID
+    @Column(nullable = false)
+    private ReservationStatus status;
 
-    private String adminNote; 
+    @Column(nullable = false)
+    private BigDecimal totalPrice;
 
-    // Toplam fiyatı hesaplar: (konaklama süresi (gün) * oda günlük fiyatı)
-    public void calculateTotalPrice() {
-        if (room != null && startDate != null && endDate != null) {
-            long diffInMillies = Math.abs(endDate.getTime() - startDate.getTime());
-            long diffDays = diffInMillies / (24 * 60 * 60 * 1000);
-            diffDays = diffDays == 0 ? 1 : diffDays;
-            this.totalPrice = room.getPrice() * diffDays;
-        }
-    }
+    @Column(length = 500)
+    private String adminNote;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 
     @PrePersist
-    public void prePersist() {
-        if (this.totalPrice == null) {
-            calculateTotalPrice();
-            if (this.totalPrice == null) {
-                this.totalPrice = 0.0;
-            }
-        }
-        if (this.status == null) {
-            this.status = ReservationStatus.PENDING;
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Toplam fiyatı hesaplar: (konaklama süresi (gün) * oda günlük fiyatı)
+     * DateUtils yardımcı sınıfı kullanılarak hesaplama yapılır
+     */
+    public void calculateTotalPrice() {
+        if (room != null && startDate != null && endDate != null) {
+            this.totalPrice = DateUtils.calculateTotalPrice(startDate, endDate, room.getPrice());
         }
     }
 
-    // Getters and Setters
-    // (oluşturduğunuz mevcut getter/setter’ları bu alana ekleyin)
-
-    // Örnek getter ve setter:
-    public Long getId() {
+    public String getId() {
         return id;
     }
-    public void setId(Long id) {
+
+    public void setId(String id) {
         this.id = id;
     }
+
     public User getUser() {
         return user;
     }
+
     public void setUser(User user) {
         this.user = user;
     }
+
     public Room getRoom() {
         return room;
     }
+
     public void setRoom(Room room) {
         this.room = room;
     }
-    public Date getStartDate() {
+
+    public LocalDate getStartDate() {
         return startDate;
     }
-    public void setStartDate(Date startDate) {
+
+    public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
     }
-    public Date getEndDate() {
+
+    public LocalDate getEndDate() {
         return endDate;
     }
-    public void setEndDate(Date endDate) {
+
+    public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
+
     public int getGuestCount() {
         return guestCount;
     }
+
     public void setGuestCount(int guestCount) {
         this.guestCount = guestCount;
     }
-    public Double getTotalPrice() {
+
+    public BigDecimal getTotalPrice() {
         return totalPrice;
     }
-    public void setTotalPrice(Double totalPrice) {
+
+    public void setTotalPrice(BigDecimal totalPrice) {
         this.totalPrice = totalPrice;
     }
+
     public ReservationStatus getStatus() {
         return status;
     }
+
     public void setStatus(ReservationStatus status) {
         this.status = status;
     }
+
     public String getAdminNote() {
         return adminNote;
     }
+
     public void setAdminNote(String adminNote) {
         this.adminNote = adminNote;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public static ReservationBuilder builder() {
+        return new ReservationBuilder();
+    }
+
+    public static class ReservationBuilder {
+        private String id;
+        private Room room;
+        private User user;
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private int guestCount;
+        private ReservationStatus status;
+        private BigDecimal totalPrice;
+        private String adminNote;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        public ReservationBuilder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public ReservationBuilder room(Room room) {
+            this.room = room;
+            return this;
+        }
+
+        public ReservationBuilder user(User user) {
+            this.user = user;
+            return this;
+        }
+
+        public ReservationBuilder startDate(LocalDate startDate) {
+            this.startDate = startDate;
+            return this;
+        }
+
+        public ReservationBuilder endDate(LocalDate endDate) {
+            this.endDate = endDate;
+            return this;
+        }
+
+        public ReservationBuilder guestCount(int guestCount) {
+            this.guestCount = guestCount;
+            return this;
+        }
+
+        public ReservationBuilder status(ReservationStatus status) {
+            this.status = status;
+            return this;
+        }
+
+        public ReservationBuilder totalPrice(BigDecimal totalPrice) {
+            this.totalPrice = totalPrice;
+            return this;
+        }
+
+        public ReservationBuilder adminNote(String adminNote) {
+            this.adminNote = adminNote;
+            return this;
+        }
+
+        public ReservationBuilder createdAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public ReservationBuilder updatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public Reservation build() {
+            Reservation reservation = new Reservation();
+            reservation.setId(id);
+            reservation.setRoom(room);
+            reservation.setUser(user);
+            reservation.setStartDate(startDate);
+            reservation.setEndDate(endDate);
+            reservation.setGuestCount(guestCount);
+            reservation.setStatus(status);
+            reservation.setTotalPrice(totalPrice);
+            reservation.setAdminNote(adminNote);
+            reservation.setCreatedAt(createdAt);
+            reservation.setUpdatedAt(updatedAt);
+            return reservation;
+        }
     }
 }
