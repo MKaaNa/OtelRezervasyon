@@ -9,8 +9,4 @@ public class UnauthorizedException extends RuntimeException {
         super(message);
         this.status = HttpStatus.UNAUTHORIZED;
     }
-
-    public HttpStatus getStatus() {
-        return status;
-    }
 } 

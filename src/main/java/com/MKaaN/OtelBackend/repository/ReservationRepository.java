@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 
 import com.MKaaN.OtelBackend.dto.projection.ReservationSummary;
 import com.MKaaN.OtelBackend.entity.Reservation;
+import com.MKaaN.OtelBackend.entity.Room;
+import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.enums.ReservationStatus;
 
 @Repository
@@ -64,12 +66,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
     /**
      * Belirli bir kullanıcıya ait rezervasyonları bulur
      */
-    List<Reservation> findByUserId(String userId);
+    List<Reservation> findByUser(User user);
 
     /**
      * Belirli bir odaya ait rezervasyonları bulur
      */
-    List<Reservation> findByRoomId(String roomId);
+    List<Reservation> findByRoom(Room room);
     
     /**
      * Belirli bir oda için belirtilen tarih aralığında rezervasyon olup olmadığını kontrol eder
@@ -121,5 +123,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, String
             @Param("roomId") String roomId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    List<Reservation> findByStartDateBetween(LocalDate start, LocalDate end);
+    List<Reservation> findByEndDateBetween(LocalDate start, LocalDate end);
+    List<Reservation> findByUserAndStatus(User user, ReservationStatus status);
+    List<Reservation> findByRoomAndStatus(Room room, ReservationStatus status);
+    boolean existsByRoomAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            Room room, LocalDate endDate, LocalDate startDate);
 }
 

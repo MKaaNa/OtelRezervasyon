@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import com.MKaaN.OtelBackend.dto.ApiResponse;
-import com.MKaaN.OtelBackend.dto.ErrorResponse;
+import com.MKaaN.OtelBackend.dto.response.ApiResponse;
+import com.MKaaN.OtelBackend.dto.response.ErrorResponse;
 import com.MKaaN.OtelBackend.enums.ErrorMessages;
 
 @RestControllerAdvice
@@ -97,4 +97,4 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(errorResponse));
     }
-} 
+}

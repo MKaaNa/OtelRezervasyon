@@ -8,52 +8,60 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.MKaaN.OtelBackend.dto.JwtResponse;
-import com.MKaaN.OtelBackend.dto.LoginRequest;
-import com.MKaaN.OtelBackend.dto.RegisterRequest;
+import com.MKaaN.OtelBackend.dto.response.UserResponse;
+import com.MKaaN.OtelBackend.dto.request.LoginRequest;
+import com.MKaaN.OtelBackend.dto.request.RegisterRequest;
+import com.MKaaN.OtelBackend.dto.request.UserCreateRequest;
+import com.MKaaN.OtelBackend.dto.response.JwtResponse;
 import com.MKaaN.OtelBackend.entity.User;
 import com.MKaaN.OtelBackend.enums.UserRole;
+import com.MKaaN.OtelBackend.mapper.UserMapper;
 import com.MKaaN.OtelBackend.repository.UserRepository;
-import com.MKaaN.OtelBackend.security.JwtService;
+import com.MKaaN.OtelBackend.security.JwtTokenProvider;
+import com.MKaaN.OtelBackend.service.spec.AuthService;
+import com.MKaaN.OtelBackend.service.spec.IUserService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
-    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
-    }
+    private final JwtTokenProvider jwtTokenProvider;
+    private final IUserService userService;
+    private final UserMapper userMapper;
 
     @Override
     public JwtResponse register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
         User user = User.builder()
+                .username(request.getUsername())
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.USER)
                 .active(true)
                 .verified(false)
                 .build();
 
         userRepository.save(user);
-        String token = jwtService.generateToken(user);
 
-        return JwtResponse.builder()
-                .token(token)
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .build();
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtTokenProvider.generateToken(authentication);
+
+        return new JwtResponse(jwt);
     }
 
     @Override
@@ -62,20 +70,9 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        String jwt = jwtService.generateToken(user);
+        String jwt = jwtTokenProvider.generateToken(authentication);
 
-        return JwtResponse.builder()
-                .token(jwt)
-                .id(user.getId())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .role(user.getRole().name())
-                .build();
+        return new JwtResponse(jwt);
     }
 
     @Override
@@ -84,43 +81,36 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void registerUser(com.MKaaN.OtelBackend.dto.UserDTO userDTO) {
-        User user = User.builder()
-                .id(userDTO.getId())
-                .firstName(userDTO.getFirstName())
-                .lastName(userDTO.getLastName())
-                .email(userDTO.getEmail())
-                .phoneNumber(userDTO.getPhoneNumber())
-                .role(userDTO.getRole())
-                .active(userDTO.isActive())
-                .verified(userDTO.isVerified())
-                .verificationToken(userDTO.getVerificationToken())
-                .resetToken(userDTO.getResetToken())
-                .resetTokenExpiry(userDTO.getResetTokenExpiry())
+    public void registerUser(UserResponse userResponse) {
+        UserCreateRequest userCreateRequest = UserCreateRequest.builder()
+                .username(userResponse.getUsername())
+                .email(userResponse.getEmail())
+                .firstName(userResponse.getFirstName())
+                .lastName(userResponse.getLastName())
+                .phoneNumber(userResponse.getPhoneNumber())
+                .role(userResponse.getRole())
+                .active(userResponse.isActive())
+                .verified(userResponse.isVerified())
                 .build();
-        userRepository.save(user);
+        userService.createUser(userCreateRequest);
     }
 
     @Override
-    public com.MKaaN.OtelBackend.dto.UserDTO getUserByEmail(String email) {
+    public UserResponse getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + email));
-        return com.MKaaN.OtelBackend.dto.UserDTO.fromUser(user);
+        return userMapper.toResponse(user);
     }
 
     @Override
     public JwtResponse authenticate(String email, String password) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + email));
-        String token = jwtService.generateToken(user);
-        return JwtResponse.builder()
-                .token(token)
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .build();
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(email, password));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        User user = (User) authentication.getPrincipal();
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        return new JwtResponse(token);
     }
 }

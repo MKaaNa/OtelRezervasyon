@@ -67,4 +67,25 @@ public final class DateUtils {
         return date != null && startDate != null && endDate != null &&
                !date.isBefore(startDate) && !date.isAfter(endDate);
     }
+
+    /**
+     * İki tarih aralığının çakışıp çakışmadığını kontrol eder
+     */
+    public static boolean isDateRangeOverlapping(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
+        return !(end1.isBefore(start2) || start1.isAfter(end2));
+    }
+
+    /**
+     * Verilen tarihin geçmiş bir tarih olup olmadığını kontrol eder
+     */
+    public static boolean isPastDate(LocalDate date) {
+        return date.isBefore(LocalDate.now());
+    }
+
+    /**
+     * Verilen tarihin bugünden en az belirtilen gün kadar sonra olup olmadığını kontrol eder
+     */
+    public static boolean isAtLeastDaysAfterToday(LocalDate date, long days) {
+        return date.isAfter(LocalDate.now().plusDays(days));
+    }
 }

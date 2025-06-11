@@ -13,7 +13,6 @@ import com.MKaaN.OtelBackend.enums.RoomType;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, String> {
-
     List<Room> findByRoomTypeAndGuestCount(RoomType roomType, Integer guestCount);
     long countByRoomTypeAndGuestCount(RoomType roomType, Integer guestCount);
     
@@ -25,6 +24,7 @@ public interface RoomRepository extends JpaRepository<Room, String> {
                            @Param("guestCount") Integer guestCount,
                            @Param("startDate") LocalDate startDate,
                            @Param("endDate") LocalDate endDate);
+
     @Query("SELECT r FROM Room r " +
            "WHERE (:roomType IS NULL OR r.roomType = :roomType) " +
            "AND (:guestCount IS NULL OR r.guestCount = :guestCount) " +
@@ -32,5 +32,27 @@ public interface RoomRepository extends JpaRepository<Room, String> {
     List<Room> findAvailable(@Param("roomType") RoomType roomType,
                            @Param("guestCount") Integer guestCount);
 
-    List<Room> findByAvailableTrue(); //Projection için kullanılabilir
+    List<Room> findByAvailableTrue();
+
+    List<Room> findByType(String type);
+
+    List<Room> findByCapacityGreaterThanEqual(int capacity);
+
+    List<Room> findByPriceLessThanEqual(double price);
+
+    List<Room> findByHasBalconyTrue();
+
+    List<Room> findByHasSeaViewTrue();
+
+    List<Room> findByHasAirConditioningTrue();
+
+    List<Room> findByHasMinibarTrue();
+
+    List<Room> findByHasTvTrue();
+
+    List<Room> findByHasSafeTrue();
+
+    List<Room> findByHasWifiTrue();
+
+    boolean existsByNumber(String number);
 } 

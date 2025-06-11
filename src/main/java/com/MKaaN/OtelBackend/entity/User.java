@@ -9,7 +9,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import com.MKaaN.OtelBackend.dto.UserDTO;
 import com.MKaaN.OtelBackend.enums.UserRole;
 
 import jakarta.persistence.Column;
@@ -20,6 +19,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -89,12 +90,54 @@ public class User implements UserDetails {
     @Column(name = "reset_token_expiry")
     private LocalDateTime resetTokenExpiry;
 
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+
+    @Column(name = "failed_login_attempts")
+    private int failedLoginAttempts;
+
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
+
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<Reservation> reservations;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        failedLoginAttempts = 0;
+        active = true;
+        verified = false;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return email; // Spring Security için email'i username olarak kullanıyoruz
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override
@@ -104,7 +147,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountLockedUntil == null || accountLockedUntil.isBefore(LocalDateTime.now());
     }
 
     @Override
@@ -117,230 +160,39 @@ public class User implements UserDetails {
         return active;
     }
 
-    @Override
-    public String getPassword() {
-        return password;
+    // Özel metodlar
+    public void incrementFailedLoginAttempts() {
+        this.failedLoginAttempts++;
+        if (this.failedLoginAttempts >= 5) {
+            this.accountLockedUntil = LocalDateTime.now().plusMinutes(30);
+        }
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void resetFailedLoginAttempts() {
+        this.failedLoginAttempts = 0;
+        this.accountLockedUntil = null;
     }
 
-    public String getEmail() {
-        return email;
+    public void updateLastLogin() {
+        this.lastLogin = LocalDateTime.now();
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public UserRole getRole() {
-        return role;
-    }
-
-    public void setRole(UserRole role) {
-        this.role = role;
-    }
-
-    public boolean isActive() {
-        return active;
+    public void changePassword(String newPassword) {
+        this.password = newPassword;
+        this.passwordChangedAt = LocalDateTime.now();
+        this.resetToken = null;
+        this.resetTokenExpiry = null;
     }
 
     public void setActive(boolean active) {
         this.active = active;
     }
 
-    public boolean isVerified() {
-        return verified;
-    }
-
     public void setVerified(boolean verified) {
         this.verified = verified;
     }
 
-    public String getVerificationToken() {
-        return verificationToken;
-    }
-
-    public void setVerificationToken(String verificationToken) {
-        this.verificationToken = verificationToken;
-    }
-
-    public String getResetToken() {
-        return resetToken;
-    }
-
-    public void setResetToken(String resetToken) {
-        this.resetToken = resetToken;
-    }
-
-    public LocalDateTime getResetTokenExpiry() {
-        return resetTokenExpiry;
-    }
-
-    public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) {
-        this.resetTokenExpiry = resetTokenExpiry;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    // Kullanıcıyı oluşturma işlemi
-    public static User createUser(String email, String password, String firstName, String lastName) {
-        return User.builder()
-                .email(email)
-                .password(password)
-                .firstName(firstName)
-                .lastName(lastName)
-                .role(UserRole.USER)
-                .active(true)
-                .verified(false)
-                .build();
-    }
-
-    // Kullanıcıyı bir DTO'ya dönüştürme (örneğin, frontend için)
-    public UserDTO toDTO() {
-        return UserDTO.fromUser(this);
-    }
-
-    public static UserBuilder builder() {
-        return new UserBuilder();
-    }
-
-    public static class UserBuilder {
-        private String id;
-        private String username;
-        private String email;
-        private String password;
-        private String firstName;
-        private String lastName;
-        private String phoneNumber;
-        private UserRole role;
-        private boolean active;
-        private boolean verified;
-        private String verificationToken;
-        private String resetToken;
-        private LocalDateTime resetTokenExpiry;
-
-        public UserBuilder id(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public UserBuilder username(String username) {
-            this.username = username;
-            return this;
-        }
-
-        public UserBuilder email(String email) {
-            this.email = email;
-            return this;
-        }
-
-        public UserBuilder password(String password) {
-            this.password = password;
-            return this;
-        }
-
-        public UserBuilder firstName(String firstName) {
-            this.firstName = firstName;
-            return this;
-        }
-
-        public UserBuilder lastName(String lastName) {
-            this.lastName = lastName;
-            return this;
-        }
-
-        public UserBuilder phoneNumber(String phoneNumber) {
-            this.phoneNumber = phoneNumber;
-            return this;
-        }
-
-        public UserBuilder role(UserRole role) {
-            this.role = role;
-            return this;
-        }
-
-        public UserBuilder active(boolean active) {
-            this.active = active;
-            return this;
-        }
-
-        public UserBuilder verified(boolean verified) {
-            this.verified = verified;
-            return this;
-        }
-
-        public UserBuilder verificationToken(String verificationToken) {
-            this.verificationToken = verificationToken;
-            return this;
-        }
-
-        public UserBuilder resetToken(String resetToken) {
-            this.resetToken = resetToken;
-            return this;
-        }
-
-        public UserBuilder resetTokenExpiry(LocalDateTime resetTokenExpiry) {
-            this.resetTokenExpiry = resetTokenExpiry;
-            return this;
-        }
-
-        public User build() {
-            User user = new User();
-            user.setId(id);
-            user.setUsername(username);
-            user.setEmail(email);
-            user.setPassword(password);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setPhoneNumber(phoneNumber);
-            user.setRole(role);
-            user.setActive(active);
-            user.setVerified(verified);
-            user.setVerificationToken(verificationToken);
-            user.setResetToken(resetToken);
-            user.setResetTokenExpiry(resetTokenExpiry);
-            return user;
-        }
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 }

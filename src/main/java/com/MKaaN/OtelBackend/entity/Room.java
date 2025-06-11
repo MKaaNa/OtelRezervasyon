@@ -6,11 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.MKaaN.OtelBackend.enums.RoomType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
@@ -21,91 +25,65 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.GenerationType;
 
 @Data
 @Entity
 @Table(name = "rooms")
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Room {
     @Id
-    @GeneratedValue(generator = "uuid")
-    @GenericGenerator(name = "uuid", strategy = "uuid2")
-    @Column(name = "id", columnDefinition = "VARCHAR(36)")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    
-    @NotBlank
-    @Column(name = "room_number", unique = true)
-    private String roomNumber;
-    
-    @NotNull
+
+    @Column(nullable = false, unique = true)
+    private String number;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "room_type")
-    private RoomType roomType;
-    
-    @NotNull
-    @Positive
+    @Column(nullable = false)
+    private RoomType type;
+
+    @Column(nullable = false)
     private BigDecimal price;
-    
+
     @Column(nullable = false)
     private boolean available;
-    
+
     @Column(length = 1000)
     private String description;
-    
+
     @Column(nullable = false)
-    private Integer guestCount;
-    
-    @Column(nullable = false)
+    private Integer capacity;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
-    
-    @Column(nullable = false)
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
     @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
     private List<Reservation> reservations = new ArrayList<>();
 
-    public Room() {
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
-    public String getId() {
-        return id;
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getRoomNumber() {
-        return roomNumber;
-    }
-
-    public void setRoomNumber(String roomNumber) {
-        this.roomNumber = roomNumber;
-    }
-
-    public RoomType getRoomType() {
-        return roomType;
-    }
-
-    public void setRoomType(RoomType roomType) {
-        this.roomType = roomType;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
+    // Özel metodlar
     public boolean isAvailable() {
         return available;
     }
@@ -114,125 +92,93 @@ public class Room {
         this.available = available;
     }
 
+    public boolean canAccommodateGuests(int guestCount) {
+        return guestCount <= capacity;
+    }
+
+    public boolean needsCleaning() {
+        if (createdAt == null) {
+            return true;
+        }
+        return LocalDateTime.now().isAfter(createdAt.plusDays(1));
+    }
+
+    public boolean needsMaintenance() {
+        if (updatedAt == null) {
+            return false;
+        }
+        return LocalDateTime.now().isAfter(updatedAt);
+    }
+
+    public void markAsCleaned() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void scheduleMaintenance(LocalDateTime maintenanceDate) {
+        this.updatedAt = maintenanceDate;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public RoomType getType() {
+        return type;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public int getCapacity() {
+        return capacity;
     }
 
-    public Integer getGuestCount() {
-        return guestCount;
+    public boolean isHasBalcony() {
+        return false; // Assuming the default value is false
     }
 
-    public void setGuestCount(Integer guestCount) {
-        this.guestCount = guestCount;
+    public boolean isHasSeaView() {
+        return false; // Assuming the default value is false
+    }
+
+    public boolean isHasAirConditioning() {
+        return false; // Assuming the default value is false
+    }
+
+    public boolean isHasMinibar() {
+        return false; // Assuming the default value is false
+    }
+
+    public boolean isHasTv() {
+        return false; // Assuming the default value is false
+    }
+
+    public boolean isHasSafe() {
+        return false; // Assuming the default value is false
+    }
+
+    public boolean isHasWifi() {
+        return false; // Assuming the default value is false
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public List<Reservation> getReservations() {
         return reservations;
-    }
-
-    public void setReservations(List<Reservation> reservations) {
-        this.reservations = reservations;
-    }
-
-    public static RoomBuilder builder() {
-        return new RoomBuilder();
-    }
-
-    public static class RoomBuilder {
-        private String id;
-        private String roomNumber;
-        private RoomType roomType;
-        private BigDecimal price;
-        private boolean available;
-        private Integer guestCount;
-        private String description;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
-        private List<Reservation> reservations;
-
-        public RoomBuilder id(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public RoomBuilder roomNumber(String roomNumber) {
-            this.roomNumber = roomNumber;
-            return this;
-        }
-
-        public RoomBuilder roomType(RoomType roomType) {
-            this.roomType = roomType;
-            return this;
-        }
-
-        public RoomBuilder price(BigDecimal price) {
-            this.price = price;
-            return this;
-        }
-
-        public RoomBuilder available(boolean available) {
-            this.available = available;
-            return this;
-        }
-
-        public RoomBuilder guestCount(Integer guestCount) {
-            this.guestCount = guestCount;
-            return this;
-        }
-
-        public RoomBuilder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public RoomBuilder createdAt(LocalDateTime createdAt) {
-            this.createdAt = createdAt;
-            return this;
-        }
-
-        public RoomBuilder updatedAt(LocalDateTime updatedAt) {
-            this.updatedAt = updatedAt;
-            return this;
-        }
-
-        public RoomBuilder reservations(List<Reservation> reservations) {
-            this.reservations = reservations;
-            return this;
-        }
-
-        public Room build() {
-            Room room = new Room();
-            room.setId(id);
-            room.setRoomNumber(roomNumber);
-            room.setRoomType(roomType);
-            room.setPrice(price);
-            room.setAvailable(available);
-            room.setGuestCount(guestCount);
-            room.setDescription(description);
-            room.setCreatedAt(createdAt);
-            room.setUpdatedAt(updatedAt);
-            room.setReservations(reservations);
-            return room;
-        }
     }
 }
